@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 	kmeans_random_init();
 	
 	/* open a file to write categorized data to, for plotting later */
-	fp = fopen(DATA_FILE, "w");
+	fp = fopen("data/clustering.dat", "w");
 	if(fp == NULL) {
 		printf("error fopen: %s\n", strerror(errno));
 	}
@@ -103,6 +103,8 @@ return EXIT_SUCCESS;
  * FUNCTIONS
  ***************************************************************/
 void write_data(FILE* fp, categorized_t *c) {
+
+	/* NOTE: add assertion fp != NULL */
 
 	uint32_t ui32_loop = 0;
 

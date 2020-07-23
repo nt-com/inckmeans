@@ -1,0 +1,9 @@
+# Ignore everything
+/*
+/*/
+!/src/
+!/include/
+# But not these files...
+!/.gitignore
+!/CMakeLists.txt
+!/README.md
