@@ -30,7 +30,7 @@ typedef enum KMEANS_ERROR_CODES {
  * GLOBALS
  ***************************************************************/
 /** @brief internal instance of the kmeans data structure */
-static kmeans_t *kmeans_instance;
+static kmeans_t *kmeans_instance = NULL;
 
 /** @brief the points used as initial centroids, for later comparison */
 static datapoint_t initial_centroids[NUMBER_CENTROIDS];
@@ -403,5 +403,9 @@ extern void kmeans_stats(uint32_t total_datapoints) {
 
 }
 
-
+extern void kmeans_deinit(void) {
+	if(kmeans_instance != NULL) {
+		free(kmeans_instance);
+	}
+}
 

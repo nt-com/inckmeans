@@ -95,7 +95,9 @@ int main(int argc, char **argv) {
 		printf("error fclose: %s\n", strerror(errno));
 	}
 
-return EXIT_SUCCESS;
+	kmeans_deinit();
+
+	return EXIT_SUCCESS;
 
 }
 

@@ -43,13 +43,17 @@ typedef struct datapoint {
 
 /** @brief data structure that holds information about incremental kmeans */
 typedef struct kmeans {
+	/* number of points attributed to a centroid */
 	uint32_t noPoints[NUMBER_CENTROIDS];
+	/* the coordinates of a centroid */
 	datapoint_t centroids[NUMBER_CENTROIDS];
 } kmeans_t;
 
 /** @brief data structure that holds data about a categorized point */
 typedef struct categorized {
+	/* the point coordinates */
 	datapoint_t datapoint;
+	/* the category the point is attributed to */
 	uint32_t category;
 } categorized_t;
 
@@ -106,5 +110,14 @@ extern datapoint_t kmeans_get_random_point(void);
  * @return void
  */
 extern void kmeans_stats(uint32_t total_datapoints);
+
+/**
+ * @brief deinits kmeans
+ * @param void
+ * @return void
+ */
+extern void kmeans_deinit(void);
+
+
 	
 #endif
