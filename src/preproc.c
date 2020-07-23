@@ -56,11 +56,37 @@ static void preproc_vector_minmax(float *vector, uint32_t size, float *min, floa
 
 }
 
+static float preproc_norm_l1(float *vector, uint32_t size) {
+
+	uint32_t ui32_loop = 0x00;
+	float denom = 0.0;	
+
+	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
+		denom += fabs(*(vector+ui32_loop));
+	}
+
+	return denom;
+
+}
+
+static float preproc_norm_l2(float *vector, uint32_t size) {
+
+	uint32_t ui32_loop = 0x00;
+	float denom = 0.0;	
+
+	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
+		denom += ( (*(vector+ui32_loop)) * (*(vector+ui32_loop)) );
+	}
+	
+	return sqrt(denom);
+
+}
+
 
 /***************************************************************
  * EXTERNAL FUNCTIONS
  ***************************************************************/
-extern void preproc_scale_minmax(double *vector, uint32_t size) {
+extern void preproc_scale_minmax(float *vector, uint32_t size) {
 
 	uint32_t ui32_loop = 0x00;
 	float min = FLT_MAX;
@@ -76,7 +102,7 @@ extern void preproc_scale_minmax(double *vector, uint32_t size) {
 	
 }
 
-extern void preproc_scale_normalize(double *vector, uint32_t size, uint8_t norm) {
+extern void preproc_scale_normalize(float *vector, uint32_t size, uint8_t norm) {
 
 	uint32_t ui32_loop = 0x00;
 	float denom = 0.0;	
@@ -90,14 +116,17 @@ extern void preproc_scale_normalize(double *vector, uint32_t size, uint8_t norm)
 			break;
 		default:
 			printf("*PREPROC ERROR* invalid norm.\n");
+			denom = 1.0;
 			break;
 	}
-
+	
 	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
 		*(vector+ui32_loop) /= denom;
 	}
-	
+
 }
+
+/* NOTE: add standardization later... */
 
 
 /***************************************************************

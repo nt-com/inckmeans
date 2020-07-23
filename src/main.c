@@ -18,6 +18,8 @@
 #include <errno.h>
 
 #include "kmeans.h"
+#include "preproc.h"
+#include "eval.h"
 
 /***************************************************************
  * MACROS
@@ -33,8 +35,15 @@
 FILE* fp = NULL;
 
 /***************************************************************
+ * TEST FUNCTION PROTOTYPES
+ ***************************************************************/
+void test_kmeans(void);
+void test_preproc(void);
+
+/***************************************************************
  * FUNCTION PROTOTYPES
  ***************************************************************/
+
 /**
  * @brief writes the points and their category to a file
  * @param fp file pointer to the file
@@ -43,10 +52,60 @@ FILE* fp = NULL;
  */
 void write_data(FILE* fp, categorized_t *c);
 
+/**
+ * @brief prints a text, followed by an array for example: x = [ 1.0 1.0 ]
+ * @param v the vector/array to print
+ * @param s the size of the array
+ * @param str the text to print along with the array
+ * @return void
+ */
+void print_float_array(float *v, uint32_t s, char *str);
+
 /***************************************************************
  * MAIN
  ***************************************************************/
 int main(int argc, char **argv) {
+
+	test_kmeans();
+	test_preproc();
+
+	return EXIT_SUCCESS;
+
+}
+
+/***************************************************************
+ * FUNCTIONS
+ ***************************************************************/
+void write_data(FILE* fp, categorized_t *c) {
+
+	/* NOTE: add assertion fp != NULL */
+
+	uint32_t ui32_loop = 0;
+
+	for(ui32_loop = 0; ui32_loop < DIMENSIONS; ui32_loop++) {
+		fprintf(fp, "%.10f ", c->datapoint.coordinates[ui32_loop]);
+	}
+
+	fprintf(fp, "%d", c->category);
+	fprintf(fp, "\n");
+
+}
+
+void print_float_array(float *v, uint32_t s, char *str) {
+
+	uint32_t ui32_loop = 0x00;
+
+	printf("%s = [", str);
+	for(ui32_loop = 0; ui32_loop < DIMENSIONS; ui32_loop++) {
+		printf(" %.4f ", *(v+ui32_loop));
+	}	printf("]\n");
+
+}
+
+/***************************************************************
+ * TEST FUNCTIONS
+ ***************************************************************/
+void test_kmeans(void) {
 
 	uint32_t i = 0x00;
 	uint32_t category = 0;
@@ -70,7 +129,12 @@ int main(int argc, char **argv) {
 	for(i = 0; i < LEARNING_RUNS; i++) {
 		/* generate a random point, then cluster it */
 		dp = kmeans_get_random_point();
+
+		eval_timer_start();
 		kmeans_cluster(instance, &dp);
+		eval_timer_stop();
+		eval_timer_result("Clustering a Point");
+
 	}
 
 	/* print some statistics about the learning phase */
@@ -80,7 +144,12 @@ int main(int argc, char **argv) {
 	printf("Starting Categorization Phase: \n");
 	for(i = 0; i < CATEGORIZE_RUNS; i++) {
 		categorized_point.datapoint = kmeans_get_random_point();
+
+		eval_timer_start();
 		category = kmeans_categorize(instance, &categorized_point);
+		eval_timer_stop();
+		eval_timer_result("Categorizing a Point");
+
 		points_categorized[category]++;
 		write_data(fp, &categorized_point);
 	}
@@ -97,26 +166,32 @@ int main(int argc, char **argv) {
 
 	kmeans_deinit(instance);
 
-	return EXIT_SUCCESS;
-
 }
 
-/***************************************************************
- * FUNCTIONS
- ***************************************************************/
-void write_data(FILE* fp, categorized_t *c) {
+void test_preproc(void) {
 
-	/* NOTE: add assertion fp != NULL */
+	float test_vector_1[3] = { 1.0, 2.0, 3.0 };
+	float test_vector_2[3] = { 1.0, 2.0, 3.0 };
+	float test_vector_3[3] = { 1.0, 2.0, 3.0 };
 
-	uint32_t ui32_loop = 0;
+	eval_timer_start();
+	preproc_scale_minmax(&test_vector_1[0], 3);
+	eval_timer_stop();
+	eval_timer_result("Min-Max Scaling");
 
-	for(ui32_loop = 0; ui32_loop < DIMENSIONS; ui32_loop++) {
-		fprintf(fp, "%.10f ", c->datapoint.coordinates[ui32_loop]);
-	}
+	eval_timer_start();
+	preproc_scale_normalize(&test_vector_2[0], 3, PREPROC_NORM_L1);
+	eval_timer_stop();
+	eval_timer_result("Normalize (L1) Scaling");
 
-	fprintf(fp, "%d", c->category);
+	eval_timer_start();
+	preproc_scale_normalize(&test_vector_3[0], 3, PREPROC_NORM_L2);
+	eval_timer_stop();
+	eval_timer_result("Normalize (L2) Scaling");
 
-	fprintf(fp, "\n");
+	print_float_array(&test_vector_1[0], 3, "TV1");
+	print_float_array(&test_vector_2[0], 3, "TV2");
+	print_float_array(&test_vector_3[0], 3, "TV3");
 
 }
 
