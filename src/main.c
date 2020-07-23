@@ -55,9 +55,9 @@ int main(int argc, char **argv) {
 	categorized_t categorized_point;
 
 	/* initialize kmeans with the manhattan metric */	
-	kmeans_init(MANHATTAN);	
+	kmeans_t *instance = kmeans_init(MANHATTAN);	
 	/* initialize random cluster centers */
-	kmeans_random_init();
+	kmeans_random_init(instance);
 	
 	/* open a file to write categorized data to, for plotting later */
 	fp = fopen("data/clustering.dat", "w");
@@ -70,17 +70,17 @@ int main(int argc, char **argv) {
 	for(i = 0; i < LEARNING_RUNS; i++) {
 		/* generate a random point, then cluster it */
 		dp = kmeans_get_random_point();
-		kmeans_cluster(&dp);
+		kmeans_cluster(instance, &dp);
 	}
 
 	/* print some statistics about the learning phase */
-	kmeans_stats(LEARNING_RUNS);
+	kmeans_stats(instance, LEARNING_RUNS);
 
 	/* now begin categorization of random points */
 	printf("Starting Categorization Phase: \n");
 	for(i = 0; i < CATEGORIZE_RUNS; i++) {
 		categorized_point.datapoint = kmeans_get_random_point();
-		category = kmeans_categorize(&categorized_point);
+		category = kmeans_categorize(instance, &categorized_point);
 		points_categorized[category]++;
 		write_data(fp, &categorized_point);
 	}
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 		printf("error fclose: %s\n", strerror(errno));
 	}
 
-	kmeans_deinit();
+	kmeans_deinit(instance);
 
 	return EXIT_SUCCESS;
 

@@ -9,6 +9,12 @@
  * @brief the header file for the kmeans algorithm
  */
 
+/**
+ * NOTES:
+ *	- add kmeans_instance pointers to docstrings.
+ *
+ */
+
 #ifndef _KMEANS_H_
 #define _KMEANS_H_
 
@@ -21,17 +27,13 @@
 #include <time.h>
 #include <math.h>
 #include <float.h>
+#include <assert.h>
 
 #include "kmeans_cfg.h"
 
 /***************************************************************
  * MACROS
  ***************************************************************/
-#define TRUE 1
-#define FALSE 0
-
-#define KMEANS_SUCCESS	0
-#define KMEANS_FAILURE	1
 
 /***************************************************************
  * TYPES / DATA STRUCTURES
@@ -41,14 +43,6 @@ typedef struct datapoint {
 	float coordinates[DIMENSIONS];
 } datapoint_t;
 
-/** @brief data structure that holds information about incremental kmeans */
-typedef struct kmeans {
-	/* number of points attributed to a centroid */
-	uint32_t noPoints[NUMBER_CENTROIDS];
-	/* the coordinates of a centroid */
-	datapoint_t centroids[NUMBER_CENTROIDS];
-} kmeans_t;
-
 /** @brief data structure that holds data about a categorized point */
 typedef struct categorized {
 	/* the point coordinates */
@@ -57,11 +51,23 @@ typedef struct categorized {
 	uint32_t category;
 } categorized_t;
 
+/** @brief data structure that holds information about incremental kmeans */
+typedef struct kmeans {
+	/* number of points attributed to a centroid */
+	uint32_t noPoints[NUMBER_CENTROIDS];
+	/* the coordinates of a centroid */
+	datapoint_t centroids[NUMBER_CENTROIDS];
+	double (*metric)(struct kmeans *instance, uint32_t c, datapoint_t *p);
+} kmeans_t;
+
+/** @brief function pointer to select the applied metric */
+double (*distance_metric)(kmeans_t *kmeans_instance, uint32_t c, datapoint_t *p);
+
 /** @brief for distance metric selection, more readable */
-typedef enum DISTANCE_METRIC {
+const enum DISTANCE_METRIC {
 	MANHATTAN,
 	EUCLIDEAN
-} distance_metric_t;
+} e_distance_metrics;
 
 /***************************************************************
  * GLOBALS
@@ -73,29 +79,29 @@ typedef enum DISTANCE_METRIC {
 /**
  * @brief creates a new instance of kmeans
  * @param metric selects the distance metric to use [MANHATTAN, EUCLIDEAN]
- * @return KMEANS_SUCCESS (0) on success, KMEANS_FAILURE (1) on failure
+ * @return an allocated kmeans instance, on failure NULL
  */
-extern uint8_t kmeans_init(uint8_t metric);
+extern kmeans_t* kmeans_init(uint8_t metric);
 
 /**
  * @brief does a random initialization of the kmeans centroids
  * @return void
  */
-extern void kmeans_random_init(void);
+extern void kmeans_random_init(kmeans_t *kmeans_instance);
 
 /**
  * @brief clusters a datapoint
  * @param dp datapoint to cluster
  * @return void
  */
-extern void kmeans_cluster(datapoint_t *dp);
+extern void kmeans_cluster(kmeans_t *kmeans_instance, datapoint_t *dp);
 
 /**
  * @brief returns to which cluster a point is added
  * @param dp datapoint to cluster
  * @return cluster number
  */
-extern uint32_t kmeans_categorize(categorized_t *c);
+extern uint32_t kmeans_categorize(kmeans_t *kmeans_instance, categorized_t *c);
 
 /**
  * @brief returns a random datapoint for testing
@@ -109,14 +115,14 @@ extern datapoint_t kmeans_get_random_point(void);
  * @param void
  * @return void
  */
-extern void kmeans_stats(uint32_t total_datapoints);
+extern void kmeans_stats(kmeans_t *kmeans_instance, uint32_t total_datapoints);
 
 /**
  * @brief deinits kmeans
  * @param void
  * @return void
  */
-extern void kmeans_deinit(void);
+extern void kmeans_deinit(kmeans_t *kmeans_instance);
 
 
 	

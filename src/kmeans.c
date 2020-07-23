@@ -29,14 +29,9 @@ typedef enum KMEANS_ERROR_CODES {
 /***************************************************************
  * GLOBALS
  ***************************************************************/
-/** @brief internal instance of the kmeans data structure */
-static kmeans_t *kmeans_instance = NULL;
 
 /** @brief the points used as initial centroids, for later comparison */
 static datapoint_t initial_centroids[NUMBER_CENTROIDS];
-
-/** @brief function pointer to select the applied metric */
-double (*distance_metric)(uint32_t c, datapoint_t *p);
 
 /** @brief holds internal error codes */
 uint8_t KMEANS_ERROR = KMEANS_OK;
@@ -65,7 +60,7 @@ static void print_point(datapoint_t *p, char *s);
  * @param p the datapoint to get the metric for
  * @return the calculated distance
  */
-static double manhattan_metric(uint32_t centroid_number, datapoint_t *p);
+static double manhattan_metric(kmeans_t *kmeans_instance, uint32_t centroid_number, datapoint_t *p);
 
 /**
  * @brief the euclidean distance metric
@@ -73,7 +68,7 @@ static double manhattan_metric(uint32_t centroid_number, datapoint_t *p);
  * @param p the datapoint to get the metric for
  * @return the calculated distance
  */
-static double euclidean_metric(uint32_t centroid_number, datapoint_t *p);
+static double euclidean_metric(kmeans_t* kmeans_instance, uint32_t centroid_number, datapoint_t *p);
 
 /**
  * @brief adds two points
@@ -105,13 +100,12 @@ static datapoint_t scalar_prod_points(float scalar, datapoint_t *p2);
  * @param dp datapoint to use for recalculation
  * @return the recalculated centroid value
  */
-static datapoint_t recalc_centroid(uint32_t centroid_number, datapoint_t *dp);
-
+static datapoint_t recalc_centroid(kmeans_t *kmeans_instance, uint32_t centroid_number, datapoint_t *dp);
 /**
  * @brief internal error handling
  * @return void
  */
-static void print_error(void);
+static void kmeans_print_error(void);
 
 /***************************************************************
  * INTERNAL FUNCTIONS
@@ -135,7 +129,7 @@ static void print_point(datapoint_t *p, char *s) {
 
 }
 
-static double manhattan_metric(uint32_t centroid_number, datapoint_t *p) {
+static double manhattan_metric(kmeans_t *kmeans_instance, uint32_t centroid_number, datapoint_t *p) {
 
 	uint32_t ui32_loop = 0;
 	float distance = 0.0;
@@ -148,7 +142,7 @@ static double manhattan_metric(uint32_t centroid_number, datapoint_t *p) {
 
 }
 
-static double euclidean_metric(uint32_t centroid_number, datapoint_t *p) {
+static double euclidean_metric(kmeans_t *kmeans_instance, uint32_t centroid_number, datapoint_t *p) {
 
 	uint32_t ui32_loop = 0;
 	float distance = 0.0;
@@ -212,7 +206,7 @@ static datapoint_t scalar_prod_points(float scalar, datapoint_t *p) {
 
 }
 
-static datapoint_t recalc_centroid(uint32_t centroid_number, datapoint_t *dp) {
+static datapoint_t recalc_centroid(kmeans_t *kmeans_instance, uint32_t centroid_number, datapoint_t *dp) {
 
 	datapoint_t temp;
 
@@ -247,7 +241,7 @@ static datapoint_t recalc_centroid(uint32_t centroid_number, datapoint_t *dp) {
 
 }
 
-static void print_error(void) {
+static void kmeans_print_error(void) {
 
 	/* only a prototype for the error function, can be expanded using this idea */
 	switch(KMEANS_ERROR) {
@@ -262,14 +256,16 @@ static void print_error(void) {
 /***************************************************************
  * EXTERNAL FUNCTIONS
  ***************************************************************/
-extern uint8_t kmeans_init(uint8_t metric) {
+extern kmeans_t* kmeans_init(uint8_t metric) {
 
 	KMEANS_ERROR = KMEANS_OK;
 
 	uint32_t ui32_loop = 0;
 
 	/* allocate memory for the kmeans type */ 
-	kmeans_instance = (kmeans_t*)malloc(sizeof(kmeans_t));
+	kmeans_t *kmeans_instance = (kmeans_t*)malloc(sizeof(kmeans_t));
+	assert(kmeans_instance != NULL);
+
 	/* seed the random number generator */
 	srand(time(0));
 
@@ -279,28 +275,34 @@ extern uint8_t kmeans_init(uint8_t metric) {
 	}
 	
 	/* set distance metric */
-	distance_metric = &manhattan_metric;
+	kmeans_instance->metric = NULL;
 
 	/* if more metrics are added, used switch right away */
 	switch(metric) {
-		case MANHATTAN:	distance_metric = &manhattan_metric;
-										break;
-		case EUCLIDEAN: distance_metric = &euclidean_metric;
-										break;
-		default:				KMEANS_ERROR = KMEANS_INVALID_METRIC;
-										break;	
-	}
+		case MANHATTAN:	
+			kmeans_instance->metric = &manhattan_metric;
+			break;
+		case EUCLIDEAN: 
+			kmeans_instance->metric = &euclidean_metric;
+			break;
+		default:				
+			KMEANS_ERROR = KMEANS_INVALID_METRIC;
+			break;	
+	} /* switch */
 
 	if(KMEANS_ERROR) {
-		print_error();
-		return KMEANS_FAILURE;
+		kmeans_print_error();
+		if(kmeans_instance != NULL) {
+			free(kmeans_instance);
+			kmeans_instance = NULL;
+		} /* if instance is not NULL */
 	}
 
-	return KMEANS_SUCCESS;
+	return kmeans_instance;
 
 }
 
-extern void kmeans_random_init(void) {
+extern void kmeans_random_init(kmeans_t *kmeans_instance) {
 	
 	uint32_t ui32_loop = 0x00;
 	datapoint_t random_point;
@@ -316,7 +318,7 @@ extern void kmeans_random_init(void) {
 
 }
 
-extern void kmeans_cluster(datapoint_t *dp) {
+extern void kmeans_cluster(kmeans_t *kmeans_instance, datapoint_t *dp) {
 
 	uint32_t ui32_loop = 0;
 	float min_distance = FLT_MAX;
@@ -324,7 +326,7 @@ extern void kmeans_cluster(datapoint_t *dp) {
 	uint32_t min_index = 0;
 
 	for(ui32_loop = 0; ui32_loop < NUMBER_CENTROIDS; ui32_loop++) {
-	 current_distance = (*distance_metric)(ui32_loop, dp);
+	 current_distance = kmeans_instance->metric(kmeans_instance, ui32_loop, dp);
 		if(min_distance > current_distance) {
 			min_distance = current_distance;
 			min_index = ui32_loop;
@@ -340,7 +342,7 @@ extern void kmeans_cluster(datapoint_t *dp) {
 	kmeans_instance->noPoints[min_index]++;
 
 	/* recalculate centroid */	
-	kmeans_instance->centroids[min_index] = recalc_centroid(min_index, dp);
+	kmeans_instance->centroids[min_index] = recalc_centroid(kmeans_instance, min_index, dp);
 		
 	#ifdef VERBOSE
 		print_point(&kmeans_instance->centroids[min_index], "centroid moved to");
@@ -348,7 +350,7 @@ extern void kmeans_cluster(datapoint_t *dp) {
 
 }
 
-extern uint32_t kmeans_categorize(categorized_t *c) {
+extern uint32_t kmeans_categorize(kmeans_t *kmeans_instance, categorized_t *c) {
 
 	uint32_t ui32_loop = 0;
 	float min_distance = FLT_MAX;
@@ -360,7 +362,7 @@ extern uint32_t kmeans_categorize(categorized_t *c) {
 	#endif
 
 	for(ui32_loop = 0; ui32_loop < NUMBER_CENTROIDS; ui32_loop++) {
-	 current_distance = manhattan_metric(ui32_loop, &c->datapoint);
+	 current_distance = kmeans_instance->metric(kmeans_instance, ui32_loop, &c->datapoint);
 		if(min_distance > current_distance) {
 			min_distance = current_distance;
 			min_index = ui32_loop;
@@ -382,7 +384,7 @@ extern datapoint_t kmeans_get_random_point(void) {
 	return dp;
 }
 
-extern void kmeans_stats(uint32_t total_datapoints) {
+extern void kmeans_stats(kmeans_t *kmeans_instance, uint32_t total_datapoints) {
 
 	uint32_t ui32_loop = 0x00;
 
@@ -403,7 +405,7 @@ extern void kmeans_stats(uint32_t total_datapoints) {
 
 }
 
-extern void kmeans_deinit(void) {
+extern void kmeans_deinit(kmeans_t *kmeans_instance) {
 	if(kmeans_instance != NULL) {
 		free(kmeans_instance);
 	}
