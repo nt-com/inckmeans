@@ -65,7 +65,7 @@ extern struct timespec eval_timer_result(char *s) {
 	if(s != NULL) { 
 		printf("{ %s }\t", s);
 	}
-	printf("*TIME EXPIRED* [ %d seconds, %d nanoseconds ]\n", result.tv_sec, result.tv_nsec);
+	printf("*TIME EXPIRED* [ %lu seconds, %lu nanoseconds ]\n", result.tv_sec, result.tv_nsec);
 
 	return result;	
 

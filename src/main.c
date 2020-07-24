@@ -20,6 +20,7 @@
 #include "kmeans.h"
 #include "preproc.h"
 #include "eval.h"
+#include "csv_reader.h"
 
 /***************************************************************
  * MACROS
