@@ -159,7 +159,7 @@ extern uint8_t csv_split(csv_t *self) {
 
 }
 
-extern uint8_t csv_extract_double(csv_t *self, double *p_dbuf) {
+extern uint8_t csv_extract_float(csv_t *self, float *p_dbuf) {
 
 	assert(self != NULL);
 	assert(p_dbuf != NULL);
@@ -183,7 +183,7 @@ extern uint8_t csv_extract_double(csv_t *self, double *p_dbuf) {
 			token_cursor++;
 		} else {
 
-			*(p_dbuf+buffer_cursor) = strtod(&token_buffer[0], NULL);
+			*(p_dbuf+buffer_cursor) = strtof(&token_buffer[0], NULL);
 
 			token_cursor = 0;
 			memset(token_buffer, 0, CSV_TOKENSIZE);

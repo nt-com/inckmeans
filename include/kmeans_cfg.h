@@ -20,7 +20,7 @@
 /* #define VERBOSE 1 */
 
 /** @brief maximal coordinate value of a datapoint */
-#define MAX_COORDINATE_VALUE 100.0f
+#define MAX_COORDINATE_VALUE 1.0f
 
 /** @brief data file location, holds clustered data */
 #define DATA_FILE "../data/clustering.dat"

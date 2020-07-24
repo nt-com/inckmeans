@@ -40,6 +40,7 @@ FILE* fp = NULL;
  ***************************************************************/
 void test_kmeans(void);
 void test_preproc(void);
+void test_cluster_netdata(void);
 
 /***************************************************************
  * FUNCTION PROTOTYPES
@@ -67,8 +68,9 @@ void print_float_array(float *v, uint32_t s, char *str);
  ***************************************************************/
 int main(int argc, char **argv) {
 
-	test_kmeans();
-	test_preproc();
+	//test_kmeans();
+	//test_preproc();
+	test_cluster_netdata();
 
 	return EXIT_SUCCESS;
 
@@ -98,7 +100,7 @@ void print_float_array(float *v, uint32_t s, char *str) {
 
 	printf("%s = [", str);
 	for(ui32_loop = 0; ui32_loop < DIMENSIONS; ui32_loop++) {
-		printf(" %.4f ", *(v+ui32_loop));
+		printf(" %.10f ", *(v+ui32_loop));
 	}	printf("]\n");
 
 }
@@ -193,6 +195,40 @@ void test_preproc(void) {
 	print_float_array(&test_vector_1[0], 3, "TV1");
 	print_float_array(&test_vector_2[0], 3, "TV2");
 	print_float_array(&test_vector_3[0], 3, "TV3");
+
+}
+
+void test_cluster_netdata(void) {
+
+	uint32_t no_points = 610866;
+	uint32_t i = 0x00;
+	uint32_t category = 0;
+	uint32_t points_categorized[NUMBER_CENTROIDS] = { 0x00 };
+	datapoint_t dp;
+	categorized_t categorized_point;
+
+	csv_t *reader = csv_ctor(CSV_FILENAME, 256, 3);
+
+	/* initialize kmeans with the manhattan metric */	
+	kmeans_t *instance = kmeans_init(MANHATTAN);	
+	/* initialize random cluster centers */
+	kmeans_random_init(instance);
+	
+	for(i = 0; i < no_points; i++) {
+		csv_getline(reader);
+		csv_extract_float(reader, &dp.coordinates[0]);
+		eval_timer_start();
+		preproc_scale_standardize(&dp.coordinates[0],3);		
+		print_float_array(&dp.coordinates[0], 3, "vec");
+		kmeans_cluster(instance, &dp);
+		eval_timer_stop();
+		eval_timer_result("Clustering a Point + Preprocessing");
+	}	
+	
+	kmeans_stats(instance, no_points);
+
+	kmeans_deinit(instance);
+	csv_dtor(reader);	
 
 }
 

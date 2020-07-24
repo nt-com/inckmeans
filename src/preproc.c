@@ -126,8 +126,31 @@ extern void preproc_scale_normalize(float *vector, uint32_t size, uint8_t norm) 
 
 }
 
-/* NOTE: add standardization later... */
+extern void preproc_scale_standardize(float *vector, uint32_t size) {
 
+	/* get mean and variance */	
+	uint32_t ui32_loop = 0x00;
+
+	double mean = 0.0;
+	double std_dev = 0.0;
+
+	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
+		mean += *(vector+ui32_loop);
+	}
+	
+	mean /= (float)size;
+
+	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
+		std_dev += ( (*(vector+ui32_loop) - mean) * (*(vector+ui32_loop) - mean) );
+	}
+
+	std_dev = sqrt(std_dev/(float)size);
+	
+	for(ui32_loop = 0; ui32_loop < size; ui32_loop++) {
+		*(vector+ui32_loop) = ( *(vector+ui32_loop) - mean ) / std_dev;
+	}
+
+}
 
 /***************************************************************
  * EOF

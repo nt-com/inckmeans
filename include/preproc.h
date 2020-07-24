@@ -51,6 +51,8 @@ extern void preproc_scale_minmax(float *vector, uint32_t size);
 /* see @norms*/
 extern void preproc_scale_normalize(float *vector, uint32_t size, uint8_t norm);
 
+extern void preproc_scale_standardize(float *vector, uint32_t size);
+
 /***************************************************************
  * EOF
  ***************************************************************/	
