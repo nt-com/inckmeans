@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 
@@ -40,7 +41,7 @@ FILE* fp = NULL;
  ***************************************************************/
 void test_kmeans(void);
 void test_preproc(void);
-void test_cluster_netdata(void);
+void test_cluster_netdata(bool verbose);
 
 /***************************************************************
  * FUNCTION PROTOTYPES
@@ -53,6 +54,15 @@ void test_cluster_netdata(void);
  * @return void
  */
 void write_data(FILE* fp, categorized_t *c);
+
+/**
+ * @brief writes the points and their category to a file
+ * @param fp file pointer to the file
+ * @param index the index to use 
+ * @param	the time taken
+ * @return void
+ */
+void write_time(FILE* fp, uint32_t index, uint32_t time);
 
 /**
  * @brief prints a text, followed by an array for example: x = [ 1.0 1.0 ]
@@ -70,7 +80,7 @@ int main(int argc, char **argv) {
 
 	//test_kmeans();
 	//test_preproc();
-	test_cluster_netdata();
+	test_cluster_netdata(false);
 
 	return EXIT_SUCCESS;
 
@@ -86,11 +96,17 @@ void write_data(FILE* fp, categorized_t *c) {
 	uint32_t ui32_loop = 0;
 
 	for(ui32_loop = 0; ui32_loop < DIMENSIONS; ui32_loop++) {
-		fprintf(fp, "%.10f ", c->datapoint.coordinates[ui32_loop]);
+		fprintf(fp, "%.10f,", c->datapoint.coordinates[ui32_loop]);
 	}
 
 	fprintf(fp, "%d", c->category);
 	fprintf(fp, "\n");
+
+}
+
+void write_time(FILE* fp, uint32_t index, uint32_t time) {
+
+	fprintf(fp, "%u,%u\n", index, time);
 
 }
 
@@ -198,7 +214,7 @@ void test_preproc(void) {
 
 }
 
-void test_cluster_netdata(void) {
+void test_cluster_netdata(bool verbose) {
 
 	uint32_t no_points = 610866;
 	uint32_t i = 0x00;
@@ -206,6 +222,11 @@ void test_cluster_netdata(void) {
 	uint32_t points_categorized[NUMBER_CENTROIDS] = { 0x00 };
 	datapoint_t dp;
 	categorized_t categorized_point;
+	struct timespec time_measurement; 
+
+	FILE *outfile = fopen("data/outfile.csv", "w");
+	FILE *learnfile = fopen("data/learn_time.csv", "w");
+	FILE *clusterfile = fopen("data/categorize_time.csv", "w");
 
 	csv_t *reader = csv_ctor(CSV_FILENAME, 256, 3);
 
@@ -219,16 +240,38 @@ void test_cluster_netdata(void) {
 		csv_extract_float(reader, &dp.coordinates[0]);
 		eval_timer_start();
 		preproc_scale_standardize(&dp.coordinates[0],3);		
-		print_float_array(&dp.coordinates[0], 3, "vec");
+		if(verbose == true) {
+			print_float_array(&dp.coordinates[0], 3, "vec");
+		}
 		kmeans_cluster(instance, &dp);
 		eval_timer_stop();
-		eval_timer_result("Clustering a Point + Preprocessing");
+		time_measurement = eval_timer_result("Clustering a Point + Preprocessing");
+		write_time(learnfile, i, time_measurement.tv_nsec);
+	}	
+	
+	csv_dtor(reader);	
+
+	kmeans_stats(instance, no_points);
+
+	reader = csv_ctor(CSV_FILENAME, 256, 3);
+	for(i = 0; i < no_points; i++) {
+		csv_getline(reader);
+		csv_extract_float(reader, &categorized_point.datapoint.coordinates[0]);
+		eval_timer_start();
+		preproc_scale_standardize(&categorized_point.datapoint.coordinates[0],3);		
+		if(verbose == true) {
+			print_float_array(&categorized_point.datapoint.coordinates[0], 3, "vec");
+		}
+		kmeans_categorize(instance, &categorized_point);
+		write_data(outfile, &categorized_point);
+		eval_timer_stop();
+		time_measurement = eval_timer_result("Categorizing a Point + Preprocessing");
+		write_time(clusterfile, i, time_measurement.tv_nsec);
 	}	
 	
 	kmeans_stats(instance, no_points);
 
 	kmeans_deinit(instance);
-	csv_dtor(reader);	
 
 }
 

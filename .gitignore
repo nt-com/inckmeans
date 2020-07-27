@@ -3,6 +3,8 @@
 /*/
 !/src/
 !/include/
+!/plot/
+!/eval/
 # But not these files...
 !/.gitignore
 !/CMakeLists.txt
